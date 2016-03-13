@@ -1,7 +1,7 @@
 # gododo
 6502 Simulator for Dodo
 
-gododo is a simulator for (Dodo)[https://github.com/peternoyes/dodo] which is a 6502 based homebrew game system. The simulator is for the most part a port of http://rubbermallet.org/fake6502.c with some 65C02 opcodes. Decimal mode is also fixed. The simulator passes the Klaus set of 6502 tests found (here)[https://github.com/Klaus2m5]
+gododo is a simulator for [Dodo](https://github.com/peternoyes/dodo) which is a 6502 based homebrew game system. The simulator is for the most part a port of http://rubbermallet.org/fake6502.c with some 65C02 opcodes. Decimal mode is also fixed. The simulator passes the Klaus set of 6502 tests found [here](https://github.com/Klaus2m5)
 
 The simulator is hardcoded to use the address space layout and devices used in Dodo but it could be repurposed for other systems I suppose. Currently the I/O is all terminal based and is a bit wonky. The code could use a lot of cleanup as well. Down the road I might try to set this up as a webservice and have a webpage that interacts with it.
 
