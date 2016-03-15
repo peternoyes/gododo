@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+//"fmt"
 )
 
 type Operation struct {
@@ -523,6 +523,7 @@ func Bpl(r Resolve) (bool, uint8) {
 }
 
 func Brk(r Resolve) (bool, uint8) {
+	panic("Brk")
 	cpu := r.Cpu
 	cpu.PC++
 	r.Push16(cpu.PC)
@@ -775,7 +776,7 @@ func Lsr(r Resolve) (bool, uint8) {
 }
 
 func Nop(r Resolve) (bool, uint8) {
-	fmt.Println("NOP: ", r.Opcode)
+	//fmt.Println("NOP: ", r.Opcode)
 
 	switch r.Opcode {
 	default:

@@ -144,6 +144,9 @@ func main() {
 		}
 	}(syncer)
 
+	var lastOp uint8 = 0
+	var waitTester int = 0
+
 	for {
 		opcode := bus.Read(cpu.PC)
 		cpu.PC++
@@ -151,6 +154,20 @@ func main() {
 		o := GetOperation(opcode)
 		c := o.Execute(cpu, bus, opcode)
 		cycles += uint64(c)
+
+		if (lastOp == 0xA5 && opcode == 0xF0) || (lastOp == 0xF0 && opcode == 0xA5) {
+			waitTester++
+		} else {
+			waitTester = 0
+		}
+
+		// If Lda, Beq sequences happens 5 times in a row then assume we are waiting for interrupt
+		if waitTester == 10 {
+			fmt.Printf("\033[0;66H")
+			fmt.Println("Cycles Per Frame: ", cycles, "  ")
+		}
+
+		lastOp = opcode
 
 		select {
 		case b, ok := <-input:
@@ -173,6 +190,7 @@ func main() {
 		case <-syncer:
 			cpu.Irq(bus)
 			cycles = 0
+			waitTester = 0
 		default:
 		}
 	}
