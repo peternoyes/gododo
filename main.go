@@ -180,6 +180,12 @@ func main() {
 					cmd = exec.Command("/bin/stty", "-raw", "echo")
 					cmd.Stdin = os.Stdin
 					cmd.Run()
+
+					fmt.Println("")
+					fmt.Println("A: ", cpu.A)
+					fmt.Println("Y: ", cpu.Y)
+					fmt.Println("X: ", cpu.X)
+
 					return
 				} else if b == 37 {
 					via.L = !via.L
