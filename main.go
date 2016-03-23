@@ -73,8 +73,14 @@ func main() {
 	ssd1305.New(ram)
 	bus.Add(ssd1305)
 
+	gamepad := new(Gamepad)
+	gamepad.New()
+
+	fram := new(Fram)
+	fram.New()
+
 	via := new(Via)
-	via.New()
+	via.New(gamepad, fram)
 	bus.Add(via)
 
 	acia := new(Acia)
@@ -175,7 +181,7 @@ func main() {
 				break
 			} else {
 				if b == int('a') {
-					via.A = !via.A
+					gamepad.A = !gamepad.A
 				} else if b == int('x') {
 					cmd = exec.Command("/bin/stty", "-raw", "echo")
 					cmd.Stdin = os.Stdin
@@ -188,9 +194,9 @@ func main() {
 
 					return
 				} else if b == 37 {
-					via.L = !via.L
+					gamepad.L = !gamepad.L
 				} else if b == 39 {
-					via.R = !via.R
+					gamepad.R = !gamepad.R
 				}
 			}
 		case <-syncer:
