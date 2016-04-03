@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+	"runtime/debug"
 )
 
 type Bus struct {
@@ -35,7 +38,12 @@ func (bus *Bus) Read(addr uint16) uint8 {
 		}
 	}
 
+	cmd := exec.Command("/bin/stty", "-raw", "echo")
+	cmd.Stdin = os.Stdin
+	cmd.Run()
+
 	fmt.Println("Attempting to read from: ", addr)
+	debug.PrintStack()
 	panic("Unmapped Address Space")
 	return 0
 }

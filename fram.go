@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 )
 
 const (
@@ -47,7 +49,6 @@ type Fram struct {
 }
 
 func (f *Fram) New() {
-	f.Data[0] = 5
 	f.Clock = false
 	f.Off = true
 	f.WaitingMosi = false
@@ -59,6 +60,21 @@ func (f *Fram) New() {
 	f.Address = 0
 	f.State = None
 	f.WriteEnable = false
+
+	if _, err := os.Stat("fram.bin"); !os.IsNotExist(err) {
+		b, err := ioutil.ReadFile("fram.bin")
+		if err != nil {
+			panic(err)
+		}
+
+		for i, v := range b {
+			f.Data[i] = v
+		}
+	}
+}
+
+func (f *Fram) Flush() {
+	ioutil.WriteFile("fram.bin", f.Data[:], 0644)
 }
 
 func (f *Fram) ReadBit(bit int) bool {
@@ -118,7 +134,7 @@ func (f *Fram) processByte(val uint8) {
 		f.Address |= uint16(val) & 0xFF
 		f.State = Reading
 		f.ByteOut = f.Data[f.Address]
-		f.Address++
+		f.incAddress()
 	case WriteAddr1:
 		f.Address = uint16(val) << 8
 		f.State = WriteAddr2
@@ -127,12 +143,12 @@ func (f *Fram) processByte(val uint8) {
 		f.State = Writing
 	case Reading:
 		f.ByteOut = f.Data[f.Address]
-		f.Address++
+		f.incAddress()
 	case Writing:
 		if f.WriteEnable {
 			f.Data[f.Address] = val
 		}
-		f.Address++
+		f.incAddress()
 	case None:
 		if f.BufferOut != nil {
 			f.ByteOut = f.BufferOut[f.BufferOutPos]
@@ -166,5 +182,12 @@ func (f *Fram) processByte(val uint8) {
 			fmt.Println("Val: ", val)
 			panic("Yikes")
 		}
+	}
+}
+
+func (f *Fram) incAddress() {
+	f.Address++
+	if f.Address == 0x2000 {
+		f.Address = 0
 	}
 }
