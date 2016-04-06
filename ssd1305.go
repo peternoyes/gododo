@@ -1,10 +1,14 @@
 package main
 
 import (
-	"fmt"
+	//"fmt"
 	"math/rand"
 	"time"
 )
+
+type Renderer interface {
+	Render(data [1024]byte)
+}
 
 type Ssd1305 struct {
 	Buffer        [1056]uint8
@@ -16,13 +20,15 @@ type Ssd1305 struct {
 	Args          []uint8
 	ArgsRemaining int
 	Ram           *Ram
+	Output        Renderer
 }
 
-func (s *Ssd1305) New(ram *Ram) {
+func (s *Ssd1305) New(ram *Ram, output Renderer) {
 	s.On = false
 	s.Column = 0
 	s.Mode = 2
 	s.Ram = ram
+	s.Output = output
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for i := 0; i < 1056; i++ {
@@ -202,48 +208,13 @@ func (s *Ssd1305) Write(addr uint16, val uint8) {
 }
 
 func (s *Ssd1305) Render() {
-	fmt.Printf("\033[0;0H")
+	var data [1024]byte
 	var x, y int
-	for y = 0; y < 64; y += 2 {
-		for x = 0; x < 128; x += 2 {
-			p1 := (s.Buffer[x+(y/8)*132] >> uint(y%8)) & 0x1
-			p2 := (s.Buffer[x+1+(y/8)*132] >> uint(y%8)) & 0x1
-			p3 := (s.Buffer[x+((y+1)/8)*132] >> uint((y+1)%8)) & 0x1
-			p4 := (s.Buffer[x+1+((y+1)/8)*132] >> uint((y+1)%8)) & 0x1
-			if p1 == 0x0 && p2 == 0x0 && p3 == 0x0 && p4 == 0x0 {
-				fmt.Print(" ")
-			} else if p1 == 0x0 && p2 == 0x0 && p3 == 0x0 && p4 == 0x1 {
-				fmt.Print("\u2597")
-			} else if p1 == 0x0 && p2 == 0x0 && p3 == 0x1 && p4 == 0x0 {
-				fmt.Print("\u2596")
-			} else if p1 == 0x0 && p2 == 0x0 && p3 == 0x1 && p4 == 0x1 {
-				fmt.Print("\u2584")
-			} else if p1 == 0x0 && p2 == 0x1 && p3 == 0x0 && p4 == 0x0 {
-				fmt.Print("\u259D")
-			} else if p1 == 0x0 && p2 == 0x1 && p3 == 0x0 && p4 == 0x1 {
-				fmt.Print("\u2590")
-			} else if p1 == 0x0 && p2 == 0x1 && p3 == 0x1 && p4 == 0x0 {
-				fmt.Print("\u259E")
-			} else if p1 == 0x0 && p2 == 0x1 && p3 == 0x1 && p4 == 0x1 {
-				fmt.Print("\u259F")
-			} else if p1 == 0x1 && p2 == 0x0 && p3 == 0x0 && p4 == 0x0 {
-				fmt.Print("\u2598")
-			} else if p1 == 0x1 && p2 == 0x0 && p3 == 0x0 && p4 == 0x1 {
-				fmt.Print("\u259A")
-			} else if p1 == 0x1 && p2 == 0x0 && p3 == 0x1 && p4 == 0x0 {
-				fmt.Print("\u258C")
-			} else if p1 == 0x1 && p2 == 0x0 && p3 == 0x1 && p4 == 0x1 {
-				fmt.Print("\u2599")
-			} else if p1 == 0x1 && p2 == 0x1 && p3 == 0x0 && p4 == 0x0 {
-				fmt.Print("\u2580")
-			} else if p1 == 0x1 && p2 == 0x1 && p3 == 0x0 && p4 == 0x1 {
-				fmt.Print("\u259C")
-			} else if p1 == 0x1 && p2 == 0x1 && p3 == 0x1 && p4 == 0x0 {
-				fmt.Print("\u259B")
-			} else if p1 == 0x1 && p2 == 0x1 && p3 == 0x1 && p4 == 0x1 {
-				fmt.Print("\u2588")
-			}
+	for y = 0; y < 8; y++ {
+		for x = 0; x < 128; x++ {
+			b := s.Buffer[x+y*132]
+			data[x+y*128] = b
 		}
-		fmt.Print("\r\n")
 	}
+	s.Output.Render(data)
 }
