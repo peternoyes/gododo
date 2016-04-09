@@ -52,7 +52,18 @@ func Terminal() {
 					toggleRune('L')
 				}
 			} else if numRead == 1 {
-				toggleRune(rune(bytes[0]))
+				switch (rune(bytes[0])) {
+				case 'a':
+					fallthrough
+				case 'A':
+					toggleRune('A')
+					break
+				case 'x':
+					fallthrough
+				case 'X':
+					toggleRune('X')
+					break
+				}
 			} else {
 				// Two characters read??
 			}
