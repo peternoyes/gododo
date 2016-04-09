@@ -1,6 +1,7 @@
 
 gododo
-
+*.bin
 firmware
 gododo.exe
-gododo.zip
+gododo.
+.DS_Store
