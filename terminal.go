@@ -20,7 +20,6 @@ func Terminal() {
 		var state string = ""
 
 		toggleRune := func(r rune) {
-			panic("Toggle")
 			i := strings.IndexRune(state, r)
 			if i < 0 {
 				state += string(r)
