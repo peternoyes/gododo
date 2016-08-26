@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/gorilla/websocket"
+	"github.com/peternoyes/dodo-sim"
 	"html/template"
 	"log"
 	"net/http"
@@ -53,7 +54,7 @@ func stream(w http.ResponseWriter, r *http.Request) {
 		}
 	}(input)
 
-	s := new(Simulator)
+	s := new(dodosim.Simulator)
 
 	renderer := new(SocketRenderer)
 	renderer.Conn = c
@@ -67,14 +68,14 @@ func stream(w http.ResponseWriter, r *http.Request) {
 		}
 		return true
 	}
-	s.Complete = func(cpu *Cpu) {
+	s.Complete = func(cpu *dodosim.Cpu) {
 
 	}
 	s.CyclesPerFrame = func(cycles uint64) {
 
 	}
 
-	Simulate(s)
+	dodosim.Simulate(s)
 
 	fmt.Println("Complete...")
 }
@@ -120,6 +121,7 @@ window.addEventListener("load", function(evt) {
     	if (keyState[39]) s += "R";
     	if (keyState[40]) s += "D";
     	if (keyState[65]) s += "A";
+    	if (keyState[66]) s += "B";
     	ws.send(s);
     }
 
@@ -130,6 +132,7 @@ window.addEventListener("load", function(evt) {
     	case 38:
     	case 40:
     	case 65:
+    	case 66:
     		if (!keyState[evt.keyCode]) {
     			keyState[evt.keyCode] = true;
     			sendKeyState();
@@ -144,7 +147,8 @@ window.addEventListener("load", function(evt) {
     	case 39:
     	case 38:
     	case 40:    
-    	case 65:		
+    	case 65:	
+    	case 66:	
 			keyState[evt.keyCode] = false;
 			sendKeyState();
     		break;
