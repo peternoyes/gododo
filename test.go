@@ -2,14 +2,15 @@ package main
 
 import (
 	"fmt"
+	"github.com/peternoyes/dodo-sim"
 	"io/ioutil"
 )
 
 func Test() {
-	bus := new(Bus)
+	bus := new(dodosim.Bus)
 	bus.New()
 
-	ram := new(Ramtest)
+	ram := new(dodosim.Ramtest)
 	bus.Add(ram)
 
 	dat, err := ioutil.ReadFile("6502_functional_test.bin")
@@ -21,20 +22,20 @@ func Test() {
 		ram[i] = b
 	}
 
-	cpu := new(Cpu)
+	cpu := new(dodosim.Cpu)
 	cpu.Reset(bus)
 
 	cpu.PC = 0x400
 
-	BuildTable()
+	dodosim.BuildTable()
 
 	for {
 		before := cpu.PC
 		opcode := bus.Read(cpu.PC)
 
 		cpu.PC++
-		cpu.Status |= Constant
-		o := GetOperation(opcode)
+		cpu.Status |= dodosim.Constant
+		o := dodosim.GetOperation(opcode)
 		o.Execute(cpu, bus, opcode)
 
 		if before == cpu.PC {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/peternoyes/dodo-sim"
 	"os"
 	"os/exec"
 	"strings"
@@ -52,7 +53,7 @@ func Terminal() {
 					toggleRune('L')
 				}
 			} else if numRead == 1 {
-				switch (rune(bytes[0])) {
+				switch rune(bytes[0]) {
 				case 'a':
 					fallthrough
 				case 'A':
@@ -73,13 +74,13 @@ func Terminal() {
 
 	}(input)
 
-	s := new(Simulator)
+	s := new(dodosim.Simulator)
 	s.Renderer = new(ConsoleRenderer)
 
 	s.Ticker = time.NewTicker(1 * time.Second) // Not using
 	s.Input = input
 	s.IntervalCallback = func() bool { return true }
-	s.Complete = func(cpu *Cpu) {
+	s.Complete = func(cpu *dodosim.Cpu) {
 		cmd := exec.Command("/bin/stty", "-raw", "echo")
 		cmd.Stdin = os.Stdin
 		cmd.Run()
@@ -94,7 +95,7 @@ func Terminal() {
 		fmt.Println("Cycles Per Frame: ", cycles, "  ")
 	}
 
-	Simulate(s)
+	dodosim.Simulate(s)
 }
 
 type ConsoleRenderer struct {
