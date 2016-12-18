@@ -5,6 +5,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/peternoyes/dodo-sim"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
@@ -75,7 +76,19 @@ func stream(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	dodosim.Simulate(s)
+	firmware, err := ioutil.ReadFile("firmware")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	game, err := ioutil.ReadFile("fram.bin")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	dodosim.Simulate(s, firmware, game)
 
 	fmt.Println("Complete...")
 }

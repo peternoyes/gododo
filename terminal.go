@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/peternoyes/dodo-sim"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -95,7 +96,19 @@ func Terminal() {
 		fmt.Println("Cycles Per Frame: ", cycles, "  ")
 	}
 
-	dodosim.Simulate(s)
+	firmware, err := ioutil.ReadFile("firmware")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	game, err := ioutil.ReadFile("fram.bin")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	dodosim.Simulate(s, firmware, game)
 }
 
 type ConsoleRenderer struct {
