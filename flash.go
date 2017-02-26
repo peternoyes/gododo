@@ -11,6 +11,46 @@ import (
 	"strings"
 )
 
+func checkVersion(port string) {
+	c := &serial.Config{Name: port, Baud: 9600}
+	s, err := serial.OpenPort(c)
+
+	defer s.Close()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("Sent command to read version")
+	n, err := s.Write([]byte{byte('V')})
+	if n != 1 {
+		panic("Did not write a byte")
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	version := make([]byte, 0)
+	for {
+		r, err := readByte(s)
+
+		fmt.Println("Just Read: ", r, " ", string([]byte{r}))
+
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+
+		if r == 0 {
+			break
+		}
+
+		version = append(version, r)
+	}
+
+	fmt.Println("Read Version: ", string(version))
+}
+
 func flashGame(port string) {
 	c := &serial.Config{Name: port, Baud: 9600}
 	s, err := serial.OpenPort(c)
@@ -21,24 +61,9 @@ func flashGame(port string) {
 		log.Fatal(err)
 	}
 
-	dat, err := ioutil.ReadFile("fram_claw.bin")
+	dat, err := ioutil.ReadFile("fram.bin")
 	if err != nil {
 		log.Fatal(err)
-	}
-
-	fmt.Println("Waiting for response from Dodo...")
-
-	r, err := readByte(s)
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-
-	if r != byte('R') {
-		fmt.Println(rune(r))
-		panic("Did not read 'R'")
-	} else {
-		fmt.Println("Preparing to write...")
 	}
 
 	fmt.Println("Sent command to flash game")
@@ -50,7 +75,7 @@ func flashGame(port string) {
 		log.Fatal(err)
 	}
 
-	r, err = readByte(s)
+	r, err := readByte(s)
 	if err != nil {
 		log.Fatal(err)
 		return
@@ -100,21 +125,6 @@ func flashSystem(port string) {
 		log.Fatal(err)
 	}
 
-	fmt.Println("Waiting for response from Dodo...")
-
-	r, err := readByte(s)
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-
-	if r != byte('R') {
-		fmt.Println(rune(r))
-		panic("Did not read 'R'")
-	} else {
-		fmt.Println("Preparing to write...")
-	}
-
 	fmt.Println("Sent command to flash system")
 	n, err := s.Write([]byte{byte('S')})
 	if n != 1 {
@@ -126,7 +136,7 @@ func flashSystem(port string) {
 
 	for i, b := range dat {
 		if i%64 == 0 {
-			r, err = readByte(s)
+			r, err := readByte(s)
 			if err != nil {
 				log.Fatal(err)
 				return
@@ -147,7 +157,7 @@ func flashSystem(port string) {
 		}
 	}
 
-	r, err = readByte(s)
+	r, err := readByte(s)
 	if err != nil {
 		log.Fatal(err)
 		return
@@ -181,7 +191,7 @@ func Flash() {
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
-		fmt.Println("Flash [S]ystem or [G]ame or [Q]uit?")
+		fmt.Println("Flash [S]ystem or [G]ame, check [V]ersion or [Q]uit?")
 		a, _ := reader.ReadString('\n')
 		a = strings.TrimSuffix(a, "\n")
 		switch a {
@@ -192,6 +202,10 @@ func Flash() {
 		case "g", "G":
 			fmt.Println("Flashing game...")
 			flashGame(port)
+			return
+		case "v", "V":
+			fmt.Println("Checking version...")
+			checkVersion(port)
 			return
 		case "q", "Q":
 			fmt.Println("Quiting...")
