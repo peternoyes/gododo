@@ -4,11 +4,12 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"github.com/tarm/serial"
 	"io/ioutil"
 	"log"
 	"os"
 	"strings"
+
+	"github.com/tarm/serial"
 )
 
 func checkVersion(port string) {
@@ -216,7 +217,7 @@ func Flash() {
 		}
 	}
 
-	c := &serial.Config{Name: "/dev/tty.usbserial-A6040I72", Baud: 9600}
+	c := &serial.Config{Name: port, Baud: 9600}
 	s, err := serial.OpenPort(c)
 
 	defer s.Close()

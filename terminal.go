@@ -2,101 +2,29 @@ package main
 
 import (
 	"fmt"
-	"github.com/peternoyes/dodo-sim"
 	"io/ioutil"
-	"os"
-	"os/exec"
-	"strings"
+
 	"time"
+
+	"strconv"
+
+	termbox "github.com/nsf/termbox-go"
+	"github.com/peternoyes/dodo-sim"
 )
 
 func Terminal() {
-	cmd := exec.Command("/bin/stty", "raw", "-echo")
-	cmd.Stdin = os.Stdin
-	cmd.Run()
-
-	input := make(chan string)
-	go func(ch chan string) {
-
-		bytes := make([]byte, 3)
-		var state string = ""
-
-		toggleRune := func(r rune) {
-			i := strings.IndexRune(state, r)
-			if i < 0 {
-				state += string(r)
-			} else {
-				state = strings.Replace(state, string(r), "", 1)
-			}
-		}
-
-		for {
-			numRead, err := os.Stdin.Read(bytes)
-			if err != nil {
-				close(input)
-				return
-			}
-
-			if numRead == 3 && bytes[0] == 27 && bytes[1] == 91 {
-				// Three-character control sequence, beginning with "ESC-[".
-
-				if bytes[2] == 65 {
-					// Up
-					toggleRune('U')
-				} else if bytes[2] == 66 {
-					// Down
-					toggleRune('D')
-				} else if bytes[2] == 67 {
-					// Right
-					toggleRune('R')
-				} else if bytes[2] == 68 {
-					// Left
-					toggleRune('L')
-				}
-			} else if numRead == 1 {
-				switch rune(bytes[0]) {
-				case 'a':
-					fallthrough
-				case 'A':
-					toggleRune('A')
-					break
-				case 'x':
-					fallthrough
-				case 'X':
-					toggleRune('X')
-					break
-				}
-			} else {
-				// Two characters read??
-			}
-
-			input <- state
-		}
-
-	}(input)
-
-	s := new(dodosim.Simulator)
-	s.Renderer = new(ConsoleRenderer)
-
-	s.Ticker = time.NewTicker(1 * time.Second) // Not using
-	s.Input = input
-	s.IntervalCallback = func() bool { return true }
-	s.Complete = func(cpu *dodosim.Cpu) {
-		cmd := exec.Command("/bin/stty", "-raw", "echo")
-		cmd.Stdin = os.Stdin
-		cmd.Run()
-
-		fmt.Println("")
-		fmt.Println("A: ", cpu.A)
-		fmt.Println("Y: ", cpu.Y)
-		fmt.Println("X: ", cpu.X)
+	err := termbox.Init()
+	if err != nil {
+		panic(err)
 	}
-	s.CyclesPerFrame = func(cycles uint64) {
-		fmt.Printf("\033[0;66H")
-		fmt.Println("Cycles Per Frame: ", cycles, "  ")
-	}
+	defer termbox.Close()
 
-	firmware, err := ioutil.ReadFile("firmware")
+	termbox.SetInputMode(termbox.InputEsc)
+
+	keys := new(Keys)
+	keys.New()
+
+	firmware, err := Asset("data/firmware")
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -108,14 +36,58 @@ func Terminal() {
 		return
 	}
 
-	dodosim.Simulate(s, firmware, game)
+	s := new(dodosim.SimulatorSync)
+
+	s.CyclesPerFrame = func(cycles uint64) {
+		drawString(66, 0, "Cycles/Frame: "+strconv.Itoa(int(cycles))+"  ")
+	}
+
+	s.Renderer = new(ConsoleRenderer)
+	s.SimulateSyncInit(firmware, game)
+
+	c := time.NewTicker(50 * time.Millisecond).C
+
+	for !keys.Done {
+
+		state := ""
+		if keys.IsPressed(A) {
+			state += "A"
+		}
+		if keys.IsPressed(B) {
+			state += "B"
+		}
+		if keys.IsPressed(Up) {
+			state += "U"
+		}
+		if keys.IsPressed(Left) {
+			state += "L"
+		}
+		if keys.IsPressed(Right) {
+			state += "R"
+		}
+		if keys.IsPressed(Down) {
+			state += "D"
+		}
+
+		s.PumpClock(state)
+
+		<-c
+	}
 }
 
 type ConsoleRenderer struct {
 }
 
+func drawString(x, y int, text string) {
+	for _, s := range text {
+		termbox.SetCell(x, y, s, termbox.ColorDefault, termbox.ColorDefault)
+		x++
+	}
+
+	termbox.Flush()
+}
+
 func (r *ConsoleRenderer) Render(data [1024]byte) {
-	fmt.Printf("\033[0;0H")
 	var x, y int
 	for y = 0; y < 64; y += 2 {
 		for x = 0; x < 128; x += 2 {
@@ -124,39 +96,39 @@ func (r *ConsoleRenderer) Render(data [1024]byte) {
 			p3 := (data[x+((y+1)/8)*128] >> uint((y+1)%8)) & 0x1
 			p4 := (data[x+1+((y+1)/8)*128] >> uint((y+1)%8)) & 0x1
 			if p1 == 0x0 && p2 == 0x0 && p3 == 0x0 && p4 == 0x0 {
-				fmt.Print(" ")
+				termbox.SetCell(x/2, y/2, ' ', termbox.ColorBlack, termbox.ColorBlack)
 			} else if p1 == 0x0 && p2 == 0x0 && p3 == 0x0 && p4 == 0x1 {
-				fmt.Print("\u2597")
+				termbox.SetCell(x/2, y/2, '\u2597', termbox.ColorGreen, termbox.ColorBlack)
 			} else if p1 == 0x0 && p2 == 0x0 && p3 == 0x1 && p4 == 0x0 {
-				fmt.Print("\u2596")
+				termbox.SetCell(x/2, y/2, '\u2596', termbox.ColorGreen, termbox.ColorBlack)
 			} else if p1 == 0x0 && p2 == 0x0 && p3 == 0x1 && p4 == 0x1 {
-				fmt.Print("\u2584")
+				termbox.SetCell(x/2, y/2, '\u2584', termbox.ColorGreen, termbox.ColorBlack)
 			} else if p1 == 0x0 && p2 == 0x1 && p3 == 0x0 && p4 == 0x0 {
-				fmt.Print("\u259D")
+				termbox.SetCell(x/2, y/2, '\u259D', termbox.ColorGreen, termbox.ColorBlack)
 			} else if p1 == 0x0 && p2 == 0x1 && p3 == 0x0 && p4 == 0x1 {
-				fmt.Print("\u2590")
+				termbox.SetCell(x/2, y/2, '\u2590', termbox.ColorGreen, termbox.ColorBlack)
 			} else if p1 == 0x0 && p2 == 0x1 && p3 == 0x1 && p4 == 0x0 {
-				fmt.Print("\u259E")
+				termbox.SetCell(x/2, y/2, '\u259E', termbox.ColorGreen, termbox.ColorBlack)
 			} else if p1 == 0x0 && p2 == 0x1 && p3 == 0x1 && p4 == 0x1 {
-				fmt.Print("\u259F")
+				termbox.SetCell(x/2, y/2, '\u259F', termbox.ColorGreen, termbox.ColorBlack)
 			} else if p1 == 0x1 && p2 == 0x0 && p3 == 0x0 && p4 == 0x0 {
-				fmt.Print("\u2598")
+				termbox.SetCell(x/2, y/2, '\u2598', termbox.ColorGreen, termbox.ColorBlack)
 			} else if p1 == 0x1 && p2 == 0x0 && p3 == 0x0 && p4 == 0x1 {
-				fmt.Print("\u259A")
+				termbox.SetCell(x/2, y/2, '\u259A', termbox.ColorGreen, termbox.ColorBlack)
 			} else if p1 == 0x1 && p2 == 0x0 && p3 == 0x1 && p4 == 0x0 {
-				fmt.Print("\u258C")
+				termbox.SetCell(x/2, y/2, '\u258C', termbox.ColorGreen, termbox.ColorBlack)
 			} else if p1 == 0x1 && p2 == 0x0 && p3 == 0x1 && p4 == 0x1 {
-				fmt.Print("\u2599")
+				termbox.SetCell(x/2, y/2, '\u2599', termbox.ColorGreen, termbox.ColorBlack)
 			} else if p1 == 0x1 && p2 == 0x1 && p3 == 0x0 && p4 == 0x0 {
-				fmt.Print("\u2580")
+				termbox.SetCell(x/2, y/2, '\u2580', termbox.ColorGreen, termbox.ColorBlack)
 			} else if p1 == 0x1 && p2 == 0x1 && p3 == 0x0 && p4 == 0x1 {
-				fmt.Print("\u259C")
+				termbox.SetCell(x/2, y/2, '\u259C', termbox.ColorGreen, termbox.ColorBlack)
 			} else if p1 == 0x1 && p2 == 0x1 && p3 == 0x1 && p4 == 0x0 {
-				fmt.Print("\u259B")
+				termbox.SetCell(x/2, y/2, '\u259B', termbox.ColorGreen, termbox.ColorBlack)
 			} else if p1 == 0x1 && p2 == 0x1 && p3 == 0x1 && p4 == 0x1 {
-				fmt.Print("\u2588")
+				termbox.SetCell(x/2, y/2, '\u2588', termbox.ColorGreen, termbox.ColorBlack)
 			}
 		}
-		fmt.Print("\r\n")
+		termbox.Flush()
 	}
 }

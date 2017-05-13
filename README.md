@@ -3,10 +3,10 @@ CLI tool for the [Dodo](https://github.com/peternoyes/dodo) the 6502 Portable Ga
 
 This tool provides several options:
 
-1. -c will run a local simulator in the console, loading 'firmware' and 'fram.bin' from the local folder
-2. -s will run the simulator through a wepage accessible from localhost:3000
+1. -c will run a local simulator in the console, loading 'fram.bin' from the local folder.
+2. -s will run the simulator through a wepage accessible at localhost:3000
 3. -f will flash fram.bin over the serial port to a connected Dodo System (note that the hardcoded USB device may need to be changed)
 
 The code for the simulator is found int the [dodo-sim](https://github.com/peternoyes/dodo-sim) repository.
 
-When running the simulator in the console, to exit, hit 'x'. The arrow keys as well as 'a' map to Dodo's gamepad. A keypress toggles the state of the key, due to limitations of running in the console.
+When running the simulator in the console, to exit, hit 'x'. The arrow keys as well as 'a' and 'b' map to Dodo's gamepad. For best results, increase the key repeat rate in your system preferences.

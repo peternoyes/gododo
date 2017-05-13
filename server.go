@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/gorilla/websocket"
-	"github.com/peternoyes/dodo-sim"
 	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/gorilla/websocket"
+	"github.com/peternoyes/dodo-sim"
 )
 
 const (
@@ -76,7 +77,8 @@ func stream(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	firmware, err := ioutil.ReadFile("firmware")
+	//firmware, err := ioutil.ReadFile("firmware")
+	firmware, err := Asset("data/firmware")
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -109,9 +111,9 @@ window.addEventListener("load", function(evt) {
 	var on = ctx.createImageData(1, 1);
 	var off = ctx.createImageData(1, 1);
 	var d = on.data;
-	d[0] = 255;
+	d[0] = 0;
 	d[1] = 255;
-	d[2] = 255;
+	d[2] = 0;
 	d[3] = 255;
 	d = off.data;
 	d[0] = 0;
