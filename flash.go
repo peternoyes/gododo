@@ -9,12 +9,47 @@ import (
 	"os"
 	"strings"
 
-	"github.com/tarm/serial"
+	"strconv"
+
+	"go.bug.st/serial.v1"
 )
 
+func choosePort(reader *bufio.Reader) (string, error) {
+	ports, err := serial.GetPortsList()
+	if err != nil {
+		return "", err
+	}
+
+	if len(ports) == 0 {
+		return "", errors.New("No serial ports found")
+	}
+
+	if len(ports) == 1 {
+		return ports[0], nil
+	}
+
+	fmt.Println("Please Select a Port:")
+	for i, s := range ports {
+		fmt.Printf("[%v]: %v", i, s)
+		fmt.Println("")
+	}
+	a, _ := reader.ReadString('\n')
+	a = strings.TrimSuffix(a, "\n")
+	i, err := strconv.ParseInt(a, 10, 32)
+	if err != nil {
+		return "", err
+	}
+
+	if i < 0 || i >= int64(len(ports)) {
+		return "", errors.New("Invalid Selection")
+	}
+
+	return ports[i], nil
+}
+
 func checkVersion(port string) {
-	c := &serial.Config{Name: port, Baud: 9600}
-	s, err := serial.OpenPort(c)
+	mode := &serial.Mode{BaudRate: 9600}
+	s, err := serial.Open(port, mode)
 
 	defer s.Close()
 
@@ -35,8 +70,6 @@ func checkVersion(port string) {
 	for {
 		r, err := readByte(s)
 
-		fmt.Println("Just Read: ", r, " ", string([]byte{r}))
-
 		if err != nil {
 			log.Fatal(err)
 			return
@@ -53,8 +86,8 @@ func checkVersion(port string) {
 }
 
 func flashGame(port string) {
-	c := &serial.Config{Name: port, Baud: 9600}
-	s, err := serial.OpenPort(c)
+	mode := &serial.Mode{BaudRate: 9600}
+	s, err := serial.Open(port, mode)
 
 	defer s.Close()
 
@@ -112,8 +145,8 @@ func flashGame(port string) {
 }
 
 func flashSystem(port string) {
-	c := &serial.Config{Name: port, Baud: 9600}
-	s, err := serial.OpenPort(c)
+	mode := &serial.Mode{BaudRate: 9600}
+	s, err := serial.Open(port, mode)
 
 	defer s.Close()
 
@@ -172,7 +205,7 @@ func flashSystem(port string) {
 	fmt.Println("Success!")
 }
 
-func readByte(s *serial.Port) (byte, error) {
+func readByte(s serial.Port) (byte, error) {
 	buf := make([]byte, 1)
 	n, err := s.Read(buf)
 	if err != nil {
@@ -180,16 +213,20 @@ func readByte(s *serial.Port) (byte, error) {
 	}
 
 	if n != 1 {
-		return 0, errors.New("Did not read single byte")
+		return 0, errors.New("Did not read byte")
 	}
 
 	return buf[0], nil
 }
 
 func Flash() {
-	port := "/dev/tty.usbserial-A6040I72"
-
 	reader := bufio.NewReader(os.Stdin)
+
+	port, err := choosePort(reader)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
 
 	for {
 		fmt.Println("Flash [S]ystem or [G]ame, check [V]ersion or [Q]uit?")
@@ -216,60 +253,4 @@ func Flash() {
 			break
 		}
 	}
-
-	c := &serial.Config{Name: port, Baud: 9600}
-	s, err := serial.OpenPort(c)
-
-	defer s.Close()
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	dat, err := ioutil.ReadFile("fram.bin")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	buf := make([]byte, 1)
-	n, err := s.Read(buf)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if n != 1 {
-		panic("Did not read a byte")
-	}
-
-	if buf[0] != byte('R') {
-		fmt.Println(rune(buf[0]))
-		panic("Did not read 'R'")
-	} else {
-		fmt.Println("Writing...")
-	}
-
-	fmt.Println("Wrote a G")
-	n, err = s.Write([]byte{byte('G')})
-
-	if n != 1 {
-		panic("Did not write a byte")
-	}
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for _, b := range dat {
-		n, err = s.Write([]byte{b})
-		if n != 1 {
-			panic("Did not write a byte")
-		}
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	s.Read(buf)
-
-	fmt.Println("Done!")
 }
