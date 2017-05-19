@@ -14,4 +14,4 @@ When running the simulator in the console, to exit, hit 'x'. The arrow keys as w
 # Installation
 
 1. Install go from golang.org
-2. At a terimal run: go get -u github.com/peternoyes/gododo
+2. At a terminal run: go get -u github.com/peternoyes/gododo
