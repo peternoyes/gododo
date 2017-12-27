@@ -43,7 +43,7 @@ func Terminal() {
 	}
 
 	s.Renderer = new(ConsoleRenderer)
-	s.SimulateSyncInit(firmware, game)
+	s.SimulateSyncInit(firmware, game, nil)
 
 	c := time.NewTicker(50 * time.Millisecond).C
 
